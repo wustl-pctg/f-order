@@ -3,7 +3,7 @@
 #include "mem_access.h"
 
 MemAccessList_t::MemAccessList_t(addr_t addr, bool is_read, 
-                                 Current curr,
+                                 Current *curr,
                                  addr_t rip, size_t mem_size) 
   : start_addr( ALIGN_BY_PREV_MAX_GRAIN_SIZE(addr) ) {
 
@@ -18,10 +18,12 @@ MemAccessList_t::MemAccessList_t(addr_t addr, bool is_read,
 
   if (is_read)
     for (int i{start}; i < (start + grains); ++i)
-      readers[i] = new MemAccess_t{curr, rip};
+      //readers[i] = new MemAccess_t{curr, rip};
+  	  readers[i] = new MemAccess_t(curr, NULL);
   else
     for (int i{start}; i < (start + grains); ++i)
-      writers[i] = new MemAccess_t{curr, rip};
+      //writers[i] = new MemAccess_t{curr, rip};
+	  writers[i] = new MemAccess_t(curr, NULL);
 
   pthread_spin_init(&readers_lock, PTHREAD_PROCESS_PRIVATE);
   pthread_spin_init(&writers_lock, PTHREAD_PROCESS_PRIVATE);

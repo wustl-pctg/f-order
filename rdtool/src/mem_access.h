@@ -36,9 +36,13 @@ using addr_t = uint64_t;
 class MemAccess_t {
 public:
   //rd_info_t rd;
-  Current current;
-  addr_t rip;
-  MemAccess_t(Current c, addr_t r): current(c), rip(r) {}
+  //Current current;
+  //addr_t rip;
+  //MemAccess_t(Current c, addr_t r): current(c), rip(r) {}
+  //unsigned int count;
+  Current *accessor;
+  MemAccess_t *next;
+  MemAccess_t(Current *a, MemAccess_t *n) : accessor(a), next(n) {}
 };
 
 class MemAccessList_t {
@@ -52,7 +56,7 @@ public:
   pthread_spinlock_t readers_lock;
   pthread_spinlock_t writers_lock;
 public:
-  MemAccessList_t(addr_t addr, bool is_read, Current current, addr_t rip, size_t mem_size);
+  MemAccessList_t(addr_t addr, bool is_read, Current *current, addr_t rip, size_t mem_size);
   ~MemAccessList_t();
 
   // MemAccess_t** readers_start() { return &readers[0]; }

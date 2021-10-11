@@ -33,7 +33,7 @@ Memory g_memory;
 __thread PrivateMemory p_memory = { NULL, 0, 0, NULL, 0, 0 };
 
 void *g_deque = NULL;
-__thread Current current;
+__thread Current *current = NULL;
 std::atomic<uint32_t> future_id;
 typedef struct FrameData_s {
   om_node* current_english;
@@ -104,16 +104,16 @@ bool PrecedesFuture(Frame a, Frame b) {
 }
 size_t total_query = 0;
 size_t total_nonsp_query = 0;
-bool Precedes(Current a, Current b) {
+bool Precedes(Current *a, Current *b) {
     //total_query++;
-    if (a.future_id == b.future_id 
-        && om_precedes(a.english, b.english)
-        && om_precedes(a.hebrew, b.hebrew)) {
+    if (a->future_id == b->future_id 
+        && om_precedes(a->english, b->english)
+        && om_precedes(a->hebrew, b->hebrew)) {
         return true;
     } else {
         //total_nonsp_query++;
         //return b.list->Search(a.english, a.hebrew, a.dag);
-        return b.list->Search(a.english, a.hebrew, a.future_id);
+        return b->list->Search(a->english, a->hebrew, a->future_id);
         //return false;
     }
 }
@@ -255,11 +255,12 @@ void init_strand(__cilkrts_worker* w, FrameData_t* init)
     f->future_id = future_id.fetch_add(1); 
     g_deque = (void*)pools[w->self].active_deque_;
     if (p_memory.mem == NULL) p_memory = g_memory.grab_mem();
-    current.english = f->current_english;
-    current.hebrew  = f->current_hebrew;
-    current.list    = f->current_list;
-    //current.dag     = f->dag;
-    current.future_id = f->future_id;
+    // new current instance
+	current = new Current(f->current_english, f->current_hebrew, f->current_list, f->future_id);
+	//current.english = f->current_english;
+    //current.hebrew  = f->current_hebrew;
+    //current.list    = f->current_list;
+    //current.future_id = f->future_id;
   }
 }
 
@@ -614,11 +615,13 @@ extern "C" void do_detach_begin(__cilkrts_stack_frame* sf)
   f->dag = parent->dag;
   f->future_id = parent->future_id;
   f->sync_list = NULL;
-  current.english = f->current_english;
-  current.hebrew  = f->current_hebrew;
-  current.list    = f->current_list;
-  //current.dag     = f->dag;
-  current.future_id = f->future_id;
+ 
+  // new current instance
+  current = new Current(f->current_english, f->current_hebrew, f->current_list, f->future_id);
+  //current.english = f->current_english;
+  //current.hebrew  = f->current_hebrew;
+  //current.list    = f->current_list;
+  //current.future_id = f->future_id;
 }
 
 /* return 1 if we are entering top-level user frame and 0 otherwise */
@@ -738,11 +741,12 @@ extern "C" void do_sync_end()
     //pthread_spin_destroy(&f->sync_lock);
   }
 
-  current.english = f->current_english;
-  current.hebrew  = f->current_hebrew;
-  current.list    = f->current_list;
-  //current.dag     = f->dag;
-  current.future_id = f->future_id;
+  // new current instance
+  current = new Current(f->current_english, f->current_hebrew, f->current_list, f->future_id);
+  //current.english = f->current_english;
+  //current.hebrew  = f->current_hebrew;
+  //current.list    = f->current_list;
+  //current.future_id = f->future_id;
   //std::cout << (void*)f->current_list << std::endl;
   //ExternalPrint();
 }
@@ -872,11 +876,12 @@ extern "C" int do_leave_end()
   // we are leaving the last frame if the shadow stack is empty
   //pools[self].active_deque_->pop();
   FrameData_t *current_frame = pools[self].active_deque_->head();
-  current.english = current_frame->current_english;
-  current.hebrew  = current_frame->current_hebrew;
-  current.list    = current_frame->current_list;
-  //current.dag     = current_frame->dag;
-  current.future_id = current_frame->future_id;
+  // new current instance
+  current = new Current(current_frame->current_english, current_frame->current_hebrew, current_frame->current_list, current_frame->future_id);
+  //current.english = current_frame->current_english;
+  //current.hebrew  = current_frame->current_hebrew;
+  //current.list    = current_frame->current_list;
+  //current.future_id = current_frame->future_id;
   return pools[self].active_deque_->empty();
 }
 
@@ -1035,9 +1040,11 @@ extern "C" void CilkFutureCreate() {
     //    lp->next = f->current_english->head;
     //    f->current_english->head = lp;
     //}
- 
-   current.list = f->current_list;
-   current.future_id = f->future_id;
+   // new current instance
+   Current *cur_new = new Current(current->english, current->hebrew, f->current_list, f->future_id);
+   current = cur_new;
+   //current.list = f->current_list;
+   //current.future_id = f->future_id;
    enable_checking();
 }
 
@@ -1097,11 +1104,12 @@ extern "C" void* CilkFutureFinish() {
 
     pools[self].active_deque_->pop();
     FrameData_t *current_frame = pools[self].active_deque_->head();
-    current.english = current_frame->current_english;
-    current.hebrew  = current_frame->current_hebrew;
-    current.list    = current_frame->current_list;
-    //current.dag     = current_frame->dag;
-    current.future_id = current_frame->future_id;
+    // new current instance
+	current = new Current(current_frame->current_english, current_frame->current_hebrew, current_frame->current_list, current_frame->future_id);
+	//current.english = current_frame->current_english;
+    //current.hebrew  = current_frame->current_hebrew;
+    //current.list    = current_frame->current_list;
+    //current.future_id = current_frame->future_id;
     enable_checking();
     return ret;
 }
@@ -1131,7 +1139,9 @@ extern "C" void* CilkFutureGet(bool suspend, void* list) {
         //    lp->next = f->current_english->head;
         //    f->current_english->head = lp;
         //}
-        current.list = f->current_list;
+        // new current instance
+		current = new Current(current->english, current->hebrew, f->current_list, current->future_id);
+		//current.list = f->current_list;
     }
     enable_checking();
     return ret;
@@ -1191,11 +1201,12 @@ break;
         break;
     }
     FrameData_t* current_frame = pools[self].active_deque_->head();
-    current.english = current_frame->current_english;
-    current.hebrew  = current_frame->current_hebrew;
-    current.list    = current_frame->current_list;
-    //current.dag     = current_frame->dag;
-    current.future_id = current_frame->future_id;
+    // new current instance
+	current = new Current(current_frame->current_english, current_frame->current_hebrew, current_frame->current_list, current_frame->future_id);
+	//current.english = current_frame->current_english;
+    //current.hebrew  = current_frame->current_hebrew;
+    //current.list    = current_frame->current_list;
+    //current.future_id = current_frame->future_id;
 
     enable_checking();
     enable_checking();

@@ -558,7 +558,7 @@ void tsan_access(bool is_read, void *addr, size_t mem_size, void *rip) {
   //if (is_read) total_readers++;
   //else         total_writers++;
   //if (!instrumentation) total_readers++;
-  if (current.list == NULL) return;
+  if (current == NULL || current->list == NULL) return;
   //if (!should_check()) return;
   disable_checking(); 
   //if (is_read) total_readers++;//reader[self]++;
