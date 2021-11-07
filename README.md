@@ -6,7 +6,7 @@ Detection algorithm that detects races on programs that use futures.
 
 ## UPDATE
 
-Since the publication of the paper, we have found a bug in the code base.  
+Since the publication of the paper, we have found a bug in the code base. 
 The fix of the bug causes the performance of the sort benchmark to slow down 
 by about 30% when running with F-Order (while others remain similar), and the 
 scalability remains the same.  
