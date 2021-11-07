@@ -3,7 +3,14 @@
 This repository contains the prototype race detection system based 
 on the F-Order algorithm. F-Order is the first known parallel race 
 Detection algorithm that detects races on programs that use futures.
-  
+
+## UPDATE
+
+Since the publication of the paper, we have found a bug in the code base.  
+The fix of the bug causes the performance of the sort benchmark to slow down 
+by about 30% when running with F-Order (while others remain similar), and the 
+scalability remains the same.  
+
 ## License
    
 Unless otherwise specified, the code in this repository is distributed
